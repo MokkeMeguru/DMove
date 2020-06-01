@@ -29,7 +29,7 @@ class OOPsActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var mAccelCurrent = SensorManager.GRAVITY_EARTH
     private var mAccelLast = SensorManager.GRAVITY_EARTH
-    private var threasthold: Float = 0.05f
+    private var threasthold: Float = 5.0f
     private var back_info_text: String = ""
     private var created_at: Long = 0
     private lateinit var imageView: ImageView

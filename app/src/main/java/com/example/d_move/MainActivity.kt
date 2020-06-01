@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener{
     private lateinit var textView: TextView
     private var mAccelCurrent = SensorManager.GRAVITY_EARTH;
     private var mAccelLast = SensorManager.GRAVITY_EARTH;
-    private var threasthold: Float = 0.05f
+    private var threasthold: Float = 5.0f
     private lateinit var textInput: TextInputEditText
     private lateinit var imageView: ImageView
     private var previous_delta = 0
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener{
 
                 // calculates diffs
                 val delta = (mAccelCurrent - mAccelLast).absoluteValue
-
+                Log.d("delta", "%05f".format(delta))
                 if (delta > threasthold) {
                     if (previous_delta != 0) {
                         safehack = true
