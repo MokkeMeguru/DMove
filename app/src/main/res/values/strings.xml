@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">D-Move</string>
+    <string name="hello">Hello</string>
+    <string name="hint">Your  schedules</string>
+    <string name="oops">OOPS!</string>１いいですね！
+    <string name="warning_move">\"あなたを詐欺罪と業務上横領罪で訴えます！理由は勿論おわかりですね？あなたが会社をこんな裏ワザで騙し、勤務時間を偽ったからです！
+        覚悟の準備をしておいて下さい！ちかいうちに訴えます。裁判も起こします。裁判所にも問答無用で来てもらいます。
+        損害賠償の準備もしておいて下さい！貴方は犯罪者です！刑務所にぶち込まれる楽しみにしておいて下さい！いいですね！\"</string>
+    <string name="source_jorno">
+       <a href="https://dic.nicovideo.jp/a/%E3%83%AF%E3%82%B6%E3%83%83%E3%83%97%E3%82%B8%E3%83%A7%E3%83%AB%E3%83%8E">ワザップジョルノより</a>
+        </string>
+    <string name="back_info">持ち運びをやめると元画面に戻れます。</string>
+    <string name="return_sub">元に戻る</string>
+    <string name="working">working</string>
+    <string name="you_are_working_now_good_luck">You are working now ... Good luck</string>
+</resources>
