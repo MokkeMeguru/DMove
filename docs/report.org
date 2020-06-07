@@ -1,0 +1,586 @@
+#+options: ':t *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:nil e:t
+#+options: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t tags:t
+#+options: tasks:t tex:t timestamp:t title:t toc:t todo:t |:t
+#+title: アプリ開発レポート Don't Move
+#+date: <2020-06-07 Sun>
+#+author: システム情報工学研究科CS専攻 江畑 拓哉 (201920631)
+#+email: meguru.mokke@gmail.com
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 26.3 (Org mode 9.4)
+#+latex_class: article
+#+latex_class_options: [dvipdfmx]
+#+LATEX_HEADER: \usepackage{hyperref}
+#+LATEX_HEADER: \usepackage{url}
+#+latex_header_extra:
+#+description:
+#+keywords:
+#+subtitle:
+#+latex_compiler: pdflatex
+#+date: \today
+* 導入
+近年オンラインインターンシップ,オンライン内定者研修,といった学生向けの就職活動の新形態が増えている.
+この中で企業側は評価として,現地のそれらと比較して,成果評価に偏る傾向がある.
+また宅内開発を行う必要があることから,"自律" がより肝要になる.
+本アプリでは,その日宣言した日報の成果達成と自律を促すために,以下の2点を達成できることを支援する.
+1. 日報を常に確認できる状態を作る
+2. スマートフォン・タブレット端末といった端末の使用を自制させる
+* アプリ開発の経緯
+近年オンラインインターンシップ,オンライン内定者研修,といった学生向けの就職活動の新形態が増えている.
+実際に私が通っている(いた) 長期〜短期を含む n = 3 のインターンシップでは,感染症の拡大防止などのためにリモートインターンが実施されていた.
+その中で特に長期インターンシップにおいてはリモートでないケースに比べ成果物の評価が厳しくなる,という事象が確認できた.
+更に別の採用インターンシップについては,社員が抱えている課題として,評価手法やスケジューリングの調整方法等が盛んに議論されていた.\par
+この背景から私は,少なくとも日報に関してはチームが把握できる,という経験的前提を元に,日報に宣言した項目の遂行が最もこの労働形態に必要なことであると考えた.\par
+日報に宣言した項目を遂行するために必要な要素は,1. 時間を有効利用すること 2. 日報にある項目を常に意識して活動をすること 3. 残業をすること の3つである.
+この中で 3. については時と場合によって実行不可能であるケースがあるため, 1. , 2. を矯正させる必要がある.\par
+以上のことから本アプリでは 1., 2. を達成することを支援する.
+* アプリの設計
+アプリについて持ち込みたい要素は,前章の猛豹を達成できること,継続して利用できること,の2点になる.
+継続して利用できることは,事務管理アプリやタスク管理アプリの多くが,その利用を "自律" によって縛るのに対して,特徴的な点である.
+しかしほとんどのアプリケーションは継続して利用されなければ意味がないため,本アプリではシンプルかつ継続して使えるようなアプリケーションを目指したいと考えた.\par
+そのため,当初は Live2D を用いたキャラクタを用いて,アプリ利用や活動のモチベーションを高めることを考えた.
+しかし,Unity の利用がほぼ必須となるため,本授業で扱う言語や Android Studio を用いるという方針と不一致であることを考え,本アプリではシンプルな画像素材で代替した.\par
+本アプリの設計は日報登録・表示画面と,警告画面の2つを軸に構成される.\par
+日報登録・表示画面は日報情報を残して,それを保持するための機能を持っている.
+あるインターン先においてアプリ利用に際して日報を外部に保持することを推奨されなかったため,データベースへのストアは行わないものとした.\par
+警告画面はアプリについて警告を表示すること,端末を触ることをやめた場合に,元の日報登録・表示画面へ戻る機能を実装した.\par
+
+以下設計に用いた figma のリンクである.\par
+- 日報登録・表示画面\par
+  #+LATEX: \url{https://www.figma.com/file/fwxvRaHl0CUy6gFJcEs1xL/D-Move?node-id=0%3A1}
+
+  #+ATTR_LATEX: :width 10cm
+  #+CAPTION: 日報登録・表示画面 の figma 概要図
+  [[./image/home.png]]
+- 警告画面\par
+  #+LATEX: \url{https://www.figma.com/file/fwxvRaHl0CUy6gFJcEs1xL/D-Move?node-id=1%3A5}
+  #+ATTR_LATEX: :width 10cm
+  #+CAPTION: 警告画面 の figma 概要図
+  [[./image/warn.png]]
+
+アプリの動きとしては,入力と端末の静止,端末の操作の3つである.入力とは日報を記録するために端末を操作することである. \par
+端末の静止とは,端末を動かさないようにしておく状態を示す.この間,日報表示画面が表示され続けることになる. \par
+端末の操作とは,何らかの動作ために端末を動かしてしまうことであり,この際には警告画面を表示し,一定の端末を静止させるためのカウントダウンを開始する.
+#+LATEX: \clearpage
+* 実装
+** layout
+まずそれぞれのレイアウトを示す. figma をベースとして現状把握している機能を用いて実装を行った.
+*** 日報表示画面
+#+BEGIN_SRC xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="20dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hello"
+            android:visibility="invisible"
+            android:id="@id/debug_rotation"/>
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@string/you_are_working_now_good_luck"
+            android:textAlignment="center"
+            android:textSize="30sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="1"
+            >
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.4"
+                tools:ignore="MissingConstraints"
+                tools:layout_editor_absoluteX="1dp"
+                tools:layout_editor_absoluteY="604dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@id/inputted_tasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="30dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:hint="@string/hint"
+                    android:textSize="24sp"
+                    android:visibility="visible" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageView
+                android:layout_weight="0.6"
+                android:id="@+id/working_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/working"
+                android:scaleType="centerInside" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+#+END_SRC
+
+*** 警告画面
+#+BEGIN_SRC xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="20dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hello"
+            android:visibility="invisible"
+            android:id="@id/debug_rotation"/>
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@string/you_are_working_now_good_luck"
+            android:textAlignment="center"
+            android:textSize="30sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="1"
+            >
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.4"
+                tools:ignore="MissingConstraints"
+                tools:layout_editor_absoluteX="1dp"
+                tools:layout_editor_absoluteY="604dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@id/inputted_tasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="30dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:hint="@string/hint"
+                    android:textSize="24sp"
+                    android:visibility="visible" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageView
+                android:layout_weight="0.6"
+                android:id="@+id/working_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/working"
+                android:scaleType="centerInside" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+#+END_SRC
+
+** アプリのソースコード
+*** 日報登録・表示機能
+
+- onResume method\par
+  onResume method とは,ページが開いている際の動作であり,この時加速度センサーを用いて定期的に加速度を計測することを命令している.
+  #+BEGIN_SRC kotlin
+    protected override fun onResume() {
+        super.onResume()
+        var accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_UI)
+   }
+  #+END_SRC
+- onPause method\par
+  onPause method とは,ページが閉じている際の動作であり,この時加速度センサーの計測を停止する.
+  #+BEGIN_SRC kotlin
+    protected override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(this)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        val gravities: FloatArray
+        if (event != null) {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+
+                // calculates gravity vector size
+                gravities = event.values.clone()
+                var size = 0.0
+                gravities.forEach {
+                    size += it.toDouble().pow(2.0)
+                }
+                size = sqrt(size)
+
+                // update previous accel
+                mAccelLast = mAccelCurrent
+                mAccelCurrent = size.toFloat()
+
+                // calculates diffs
+                val delta = (mAccelCurrent - mAccelLast).absoluteValue
+                if (delta > threasthold) {
+                    if (previous_delta != 0) {
+                        safehack = true
+                        intent = Intent(application, OOPsActivity::class.java)
+                        startActivity(intent)
+                        previous_delta = 0
+                    } else {
+                        previous_delta += 1
+                    }
+                }
+            }
+        }
+    }
+  #+END_SRC
+- onAccuracyChanged method\par
+  onAccuracyChanged method とは,センサーの精度が変化した際の動作を命令するための関数であるが,本アプリでは必要ないため中身を記述しない.
+  #+BEGIN_SRC kotlin
+     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+    }
+  #+END_SRC
+- onSensorChanged method\par
+  onSensorChanged method とは, センサーが読み取った値が変化した時に呼び出される関数であるが,本アプリの理想状態である,”端末が動かない”,を満たしている際には呼び出されない関数である.
+  この関数では,加速度の大きさを計算し (// calculates gravity vector size 部), その後過去の加速度を更新する.
+  更新される値としては重力加速度の大きさが入ることを期待している.
+  更新値が一定を超えた際には,条件判定を走らせ (// calculates diffs), 一定許容量を超えた際に警告画面の Intent へ遷移する.\par
+  previous\under{}delta とは, 許容量を超える更新が行われた回数を記録しており, これは警告画面から本画面へ遷移した際に, 過去のセンサーの記録が残ってしまうことによる再警告を防いでいる.
+#+BEGIN_SRC kotlin
+    override fun onSensorChanged(event: SensorEvent?) {
+        val gravities: FloatArray
+        if (event != null) {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+
+                // calculates gravity vector size
+                gravities = event.values.clone()
+                var size = 0.0
+                gravities.forEach {
+                    size += it.toDouble().pow(2.0)
+                }
+                size = sqrt(size)
+
+                // update previous accel
+                mAccelLast = mAccelCurrent
+                mAccelCurrent = size.toFloat()
+
+                // calculates diffs
+                val delta = (mAccelCurrent - mAccelLast).absoluteValue
+                if (delta > threasthold) {
+                    if (previous_delta != 0) {
+                        safehack = true
+                        intent = Intent(application, OOPsActivity::class.java)
+                        startActivity(intent)
+                        previous_delta = 0
+                    } else {
+                        previous_delta += 1
+                    }
+                }
+            }
+        }
+    }
+
+#+END_SRC
+*** 警告機能
+- onSensorChanged method\par
+    本警告機能における onSensorChanged method の要点は、 15秒 画面を戻す余裕を与えることと、操作を継続するとタイマーをリセットすることの2つである.
+    前者は タイマーをセットしないケースであると, 警告画面と日報表示画面を行ったり来たりしてしまい、警告画面を見ることが出来ないためである.
+    #+BEGIN_SRC kotlin
+    override fun onSensorChanged(event: SensorEvent?) {
+        val gravities: FloatArray
+        if (event != null) {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+
+                // calculates gravity vector size
+                gravities = event.values.clone()
+                var size = 0.0
+                gravities.forEach {
+                    size += it.toDouble().pow(2.0)
+                }
+                size = sqrt(size)
+
+                // update previous accel
+                mAccelLast = mAccelCurrent
+                mAccelCurrent = size.toFloat()
+
+                // show diffs
+                val delta = (mAccelCurrent - mAccelLast).absoluteValue
+                val updated_time =  System.currentTimeMillis() / 1000 - created_at
+                if (delta <= threasthold && updated_time > 15.0) {
+                    back_info.text = "%s [%s]".format(back_info_text, "OK")
+                    this.return_button.visibility = View.VISIBLE
+                    this.finish()
+                    return
+                } else {
+                    this.return_button.visibility = View.INVISIBLE
+
+                back_info.text = "%s [%d]".format(back_info_text, 15 -  updated_time)
+                }
+                if (delta > threasthold) {
+                    created_at = System.currentTimeMillis() / 1000
+                }
+            }
+        }
+    }
+    #+END_SRC
+* 動作例
+動作例の日報登録・表示については figma を参照して頂きたい.
+警告表示については、次のケースで動作を想定している.
+** 静止中の端末を動かしたケース
+静止中の端末に対して端末を動かすと, 警告画面へ遷移する.
+#+LATEX: \url{https://www.figma.com/file/fwxvRaHl0CUy6gFJcEs1xL/D-Move?node-id=1%3A5}
+#+ATTR_LATEX: :width 10cm
+#+CAPTION: 警告画面 への遷移
+[[./image/move-to-warn.png]]
+** 警告画面表示中に端末を動かしたケース
+警告画面が表示されているにもかかわらず更に端末を動かしたケースでは, 警告画面から表示画面へ戻るカウントダウンをリセットする.
+#+LATEX: \url{https://www.figma.com/file/fwxvRaHl0CUy6gFJcEs1xL/D-Move?node-id=1%3A5}
+#+ATTR_LATEX: :width 10cm
+#+CAPTION: 警告画面 への遷移
+[[./image/restart-count-warn.png]]
+* 得られた結果
+** 難しかったところ
+実機と仮想マシンは加速度センサーが返す大きさが異なっていた. そのため, 端末を動かしたと判定する閾値を実機を用いて検証する必要があり, 開発時間の1割ほどをコンパイルに費やしてしまった.
+** このアプリで得られた結果
+少なくとも私の通っていた短期インターンについてはその選考において通過をいたしました.
+また長期インターンシップについては, 日報に記述した内容を作業時間内に達成する頻度が向上しました.
+** 将来的な展望
+将来的には, Unity の Cubism SDK (Live2D モデルを表示するための SDK) を用いて、より愛着の生まれるアプリに改装します.
+* 付録
+** アプリのソースコード
+ソースコードは Github 上の \url{https://github.com/MokkeMeguru/DMove} にて公開している.
+*** 日報登録・表示機能
+#+BEGIN_SRC kotlin
+class MainActivity : AppCompatActivity(), SensorEventListener{
+    private lateinit var sensorManager: SensorManager;
+    private var safehack: Boolean = false
+    private lateinit var textView: TextView
+    private var mAccelCurrent = SensorManager.GRAVITY_EARTH;
+    private var mAccelLast = SensorManager.GRAVITY_EARTH;
+    private var threasthold: Float = 5.0f
+    private lateinit var textInput: TextInputEditText
+    private lateinit var imageView: ImageView
+    private var previous_delta = 0
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContentView(R.layout.activity_main)
+        imageView = findViewById<ImageView>(R.id.working_view)
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        textView = findViewById(R.id.debug_rotation)
+        textInput = findViewById(R.id.inputted_tasks)
+
+        val oopsImage: Bitmap? = "sozai/working.png".getBitmapFromAsset()
+        if (oopsImage != null) {
+            imageView.setImageBitmap(oopsImage)
+        }
+    }
+
+
+    private fun String.getBitmapFromAsset(): Bitmap? {
+        if (assets != null) {
+            try {
+                val realPath = assets.open(this)
+                return BitmapFactory.decodeStream(realPath)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+
+        }
+        return null
+    }
+
+    protected override fun onResume() {
+        super.onResume()
+        var accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_UI)
+   }
+
+    protected override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(this)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        val gravities: FloatArray
+        if (event != null) {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+
+                // calculates gravity vector size
+                gravities = event.values.clone()
+                var size = 0.0
+                gravities.forEach {
+                    size += it.toDouble().pow(2.0)
+                }
+                size = sqrt(size)
+
+                // update previous accel
+                mAccelLast = mAccelCurrent
+                mAccelCurrent = size.toFloat()
+
+                // calculates diffs
+                val delta = (mAccelCurrent - mAccelLast).absoluteValue
+                if (delta > threasthold) {
+                    if (previous_delta != 0) {
+                        safehack = true
+                        intent = Intent(application, OOPsActivity::class.java)
+                        startActivity(intent)
+                        previous_delta = 0
+                    } else {
+                        previous_delta += 1
+                    }
+                }
+            }
+        }
+    }
+}
+#+END_SRC
+*** 警告機能
+#+BEGIN_SRC kotlin
+class OOPsActivity : AppCompatActivity(), SensorEventListener {
+    private lateinit var sensorManager: SensorManager
+    private var mAccelCurrent = SensorManager.GRAVITY_EARTH
+    private var mAccelLast = SensorManager.GRAVITY_EARTH
+    private var threasthold: Float = 5.0f
+    private var back_info_text: String = ""
+    private var created_at: Long = 0
+    private lateinit var imageView: ImageView
+    private lateinit var source_jorno: TextView
+    private lateinit var back_info: TextView
+    private lateinit var return_button: Button
+    private val soruce_jorno_link: String = "https://dic.nicovideo.jp/a/%E3%83%AF%E3%82%B6%E3%83%83%E3%83%97%E3%82%B8%E3%83%A7%E3%83%AB%E3%83%8E"
+    override fun onCreate(savedInstanceState: Bundle?) {
+
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_oops)
+        return_button = findViewById(R.id.return_button)
+        return_button.setOnClickListener{
+            this.finish()
+        }
+
+        back_info_text = resources.getString(R.string.back_info)
+        back_info = findViewById(R.id.back_info)
+        source_jorno = findViewById(R.id.source_jorno)
+        source_jorno.movementMethod = LinkMovementMethod.getInstance()
+         source_jorno.setOnClickListener{
+           val browserIntent = Intent(Intent.ACTION_VIEW)
+           browserIntent.data = Uri.parse(soruce_jorno_link)
+            startActivity(browserIntent)
+        }
+        imageView = findViewById<ImageView>(R.id.oops_view)
+        val oopsImage: Bitmap? = "sozai/oops.png".getBitmapFromAsset()
+        if (oopsImage != null) {
+            imageView.setImageBitmap(oopsImage)
+        }
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        created_at = System.currentTimeMillis() / 1000
+
+    }
+
+    private fun String.getBitmapFromAsset(): Bitmap? {
+        if (assets != null) {
+            try {
+                val realPath = assets.open(this)
+                return BitmapFactory.decodeStream(realPath)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+
+        }
+        return null
+    }
+    override fun onResume() {
+        super.onResume()
+        val accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_UI)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(this)
+    }
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        val gravities: FloatArray
+        if (event != null) {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+
+                // calculates gravity vector size
+                gravities = event.values.clone()
+                var size = 0.0
+                gravities.forEach {
+                    size += it.toDouble().pow(2.0)
+                }
+                size = sqrt(size)
+
+                // update previous accel
+                mAccelLast = mAccelCurrent
+                mAccelCurrent = size.toFloat()
+
+                // show diffs
+                val delta = (mAccelCurrent - mAccelLast).absoluteValue
+                val updated_time =  System.currentTimeMillis() / 1000 - created_at
+                if (delta <= threasthold && updated_time > 15.0) {
+                    back_info.text = "%s [%s]".format(back_info_text, "OK")
+                    this.return_button.visibility = View.VISIBLE
+                    this.finish()
+                    return
+                } else {
+                    this.return_button.visibility = View.INVISIBLE
+
+                   back_info.text = "%s [%d]".format(back_info_text, 15 -  updated_time)
+                }
+                if (delta > threasthold) {
+                    created_at = System.currentTimeMillis() / 1000
+                }
+            }
+        }
+    }
+}
+#+END_SRC

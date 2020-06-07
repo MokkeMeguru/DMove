@@ -12,3 +12,10 @@
 /captures
 .externalNativeBuild
 .cxx
+*.pygtex
+*.el
+*.pygstyle
+*.bbl
+*.dvi
+*.pdf
+*.tex
